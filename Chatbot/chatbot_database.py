@@ -74,7 +74,7 @@ def find_parent(pid):
 
     def sql_insert_replace_comment(commentid, parentid, parent, comment, subreddit, time, score):
         try:
-            sql = """UPDATE parent_reply SET parent_id = %, comment_id = %, parent = %, comment = %, subreddit = %, unix = %, score = % WHERE parent_id =%;""".format(
+            sql = """UPDATE parent_reply SET parent_id = {}, comment_id = {}, parent = {}, comment = {}, subreddit = {}, unix = {}, score = {} WHERE parent_id ={};""".format(
                 parentid, commentid, parent, comment, subreddit, int(time), score,parentid)
             transaction_bldr(sql)
         except Exception as e:
