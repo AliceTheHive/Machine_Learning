@@ -1,8 +1,9 @@
 import sqlite3
 import json
 from datetime import datetime
+import time
 print('hello')
-timeframe = '2005-12'
+timeframe = '2006-01'
 
 sql_transaction = []
 connection = sqlite3.connect('{}.db'.format(timeframe))
@@ -10,7 +11,7 @@ c = connection.cursor()
 
 
 def create_table():
-    c.execute("CREATE TABLE IF NOT EXISTS parent_reply(parent_id TEXT PRIMARY KEY, comment_id TEXT UNIQUE, parent TEXT, comment TEXT, subreddit TEXT, unix INT, score INT)")
+    c.execute("CREATE TABLE parent_reply(parent_id TEXT PRIMARY KEY, comment_id TEXT UNIQUE, parent TEXT, comment TEXT, subreddit TEXT, unix INT, score INT)")
 
 
 def format_data(data):
@@ -74,7 +75,7 @@ def find_parent(pid):
 
     def sql_insert_replace_comment(commentid, parentid, parent, comment, subreddit, time, score):
         try:
-            sql = """UPDATE parent_reply SET parent_id = {}, comment_id = {}, parent = {}, comment = {}, subreddit = {}, unix = {}, score = {} WHERE parent_id ={};""".format(
+            sql = """UPDATE parent_reply SET parent_id = "{}", comment_id = "{}", parent = "{}", comment = "{}", subreddit = "{}", unix = "{}", score = "{}" WHERE parent_id ={};""".format(
                 parentid, commentid, parent, comment, subreddit, int(time), score,parentid)
             transaction_bldr(sql)
         except Exception as e:
@@ -95,16 +96,17 @@ def find_parent(pid):
             transaction_bldr(sql)
         except Exception as e:
             print('s-NO PARENT insertion', str(e))
-
+    print('how about here?')
     if __name__ == '__main__':
         create_table()
         row_counter = 0
-        _paired_rows = 0
+        paired_rows = 0
 
-        print("reaching here?")
+        #print("reaching here?")
+        print('hello2')
         with open('/Users/kl/Documents/Machine_Learning__AI/Chatbot/{}/RC_{}'.format(timeframe.split('-')[0], timeframe), buffering=1000)as f:
             for row in f:
-                # print(row)
+                print(row)
                 row_counter += 1
                 row = json.loads(row)
                 parent_id = row['parent_id']
@@ -112,28 +114,27 @@ def find_parent(pid):
                 created_utc = row['created_utc']
                 score = row['score']
                 subreddit = row['subreddit']
-                comment_id = row['name']
+                comment_id = row['id']
                 parent_data = find_parent(parent_id)
 
-                if score >= 2:
-                    existing_comment_score = find_existing_score(parent_id)
-                    if existing_comment_score:
-                        if score > existing_comment_score:
-                            if acceptable(body):
-                                sql_insert_replace_comment(
-                                    comment_id, parent_id, parent_data, body, subreddit, created_utc, score)
-                    else:
+                # if score >= 1:
+                existing_comment_score = find_existing_score(parent_id)
+                if existing_comment_score:
+                    if score > existing_comment_score:
                         if acceptable(body):
-                            if parent_data:
-                                sql_insert_has_parent(
-                                    comment_id, parent_id, parent_data, body, subreddit, created_utc, score)
+                            sql_insert_replace_comment(comment_id, parent_id, parent_data, body, subreddit, created_utc, score)
+                else:
+                    if acceptable(body):
+                        if parent_data:
+                            if score >= 2:
+                                sql_insert_has_parent(comment_id, parent_id, parent_data, body, subreddit, created_utc, score)
                                 paired_rows += 1
-                            else:
-                                sql_insert_no_parent(
-                                    comment_id, parent_id, body, subreddit, created_utc, score)
+                        else:
+                            sql_insert_no_parent(comment_id, parent_id, body, subreddit, created_utc, score)
+                    
                 if row_counter % 100000 == 0:
                     print("Total rows read: {}, Paired rows: {}, Time: {}".format(
-                        row_counter, _paired_rows, str(datetime.now())))
+                        row_counter, paired_rows, str(datetime.now())))
 
 
                         
